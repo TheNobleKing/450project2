@@ -86,6 +86,7 @@ void send_file(FILE *fp, int sockfd){
 
 int main()
 {
+	srand(time(0));
     int sockfd, connfd, len;
     struct sockaddr_in servaddr, cli;
     FILE *fp;
