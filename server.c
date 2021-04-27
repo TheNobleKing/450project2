@@ -9,10 +9,19 @@
 #define PORT 8080
 #define SA struct sockaddr
 
+//new variables for keeping track of everything
+int total_packets_rec = 0;
+int total_bytes_rec = 0;
+int total_dup_packs = 0;
+int total_dup_acks = 0;
+int packets_lost = 0;
+int rec_acks = 0;
+int lost_acks = 0;
 char filename[SIZE];
 
+
 //simulate packet loss by using a random float between 0 and 1.
-int sim_loss(int loss)
+int sim_loss(double loss)
 {
 	double simulated = (double) (rand()%100) / 100;
 	if(simulated < loss){
@@ -26,7 +35,7 @@ int sim_loss(int loss)
 }
 
 //simulate ack loss by using a random float between 0 and 1.
-int sim_ack_loss(int loss)
+int sim_ack_loss(double loss)
 {
 	double simulated = (double) (rand()%100) / 100;
 	if(simulated < loss){
@@ -66,6 +75,18 @@ void send_file(FILE *fp, int sockfd){
   char data[SIZE] = {0};
   n = 0; bytetotal = 0;
 
+
+  //Okay so here is what needs to happen. We have to rewrite this while loop
+  //at start we use recvfrom (https://linux.die.net/man/2/recvfrom)
+  //in order to get the incoming packet from client
+  //then we need to run the simulate packet loss function to see if we lose that packet
+  //then we check the sequence number to verify packet is in order or if we got a dup
+  //if we got a dup, then we go back to the top of the loop
+  //else we send the client that single line
+  // we currently still need to build a way to send acks (1 for good, 0 for bad)
+  //seq number can just flip back and forth from 0 and 1.
+
+
   while((fgets(data, SIZE, fp)) != NULL) {
     check = NULL; //reset chkval
     check = write(sockfd, data, SIZE, 0);
@@ -84,12 +105,17 @@ void send_file(FILE *fp, int sockfd){
 }
 
 
-int main()
+int main(int argc, char *argv[]) //arg1 timeout value, arg2 packet loss rate, arg3 ack loss rate
 {
 	srand(time(0));
     int sockfd, connfd, len;
     struct sockaddr_in servaddr, cli;
+
     FILE *fp;
+
+    //get rates from the args.
+    double packet_loss_rate = atof(argv[1]);
+    double ack_loss_rate = atof(argv[2]);
 
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);

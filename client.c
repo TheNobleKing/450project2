@@ -36,10 +36,16 @@ void write_file(int sockfd){
   char buffer[SIZE];
 
   fp = fopen(filename, "w"); //create out.txt
-printf("out.txt created, attempting to write...\n");
+  printf("out.txt created, attempting to write...\n");
 	c = 0; n = 0; bytetotal = 0;
-  while (1) {
 
+	// rest of the function needs totally be rewritten
+	// so that we are receiving one line at a time
+	// by sending 1 request at a time and waiting for those requests
+	// to be acknowledged [I don't know how to marry this with how we currently use the program]
+	//and when we get the EOF we exit
+
+  while (1) {
     c = recv(sockfd, buffer, SIZE, 0); //copy buffer each time it is updated
     if( c == -1 ){
     perror("recv failed: \t");
