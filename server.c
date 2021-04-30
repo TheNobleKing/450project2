@@ -58,13 +58,6 @@ void clearBuf(char* b)
     for (i = 0; i < SIZE; i++)
         b[i] = '\0';
 }
-
-// function to encrypt
-char Cipher(char ch)
-{
-    return ch;
-}
-
 // function sending file
 int sendFile(FILE* fp, char* buf, int s)
 {
@@ -73,15 +66,12 @@ int sendFile(FILE* fp, char* buf, int s)
         strcpy(buf, nofile);
         len = strlen(nofile);
         buf[len] = EOF;
-        for (i = 0; i < len; i++)
-            buf[i] = Cipher(buf[i]);
         return 1;
     }
 
     char ch, ch2;
     for (i = 0; i < s; i++) {
         ch = fgetc(fp);
-        ch2 = Cipher(ch);
         buf[i] = ch2;
         if (ch == EOF)
             return 1;
@@ -135,6 +125,7 @@ int main()
         while (1) {
             // process
             if (sendFile(fp, net_buf, SIZE)) {
+            	//if not simulateloss goes here, and wraps around the sendto
                 sendto(sockfd, net_buf, SIZE,
                        sendrecvflag,
                     (struct sockaddr*)&addr_con, addrlen);
@@ -142,6 +133,7 @@ int main()
             }
 
             // send
+            //if not simulateloss goes here and wraps around the sendto
             sendto(sockfd, net_buf, SIZE,
                    sendrecvflag,
                 (struct sockaddr*)&addr_con, addrlen);

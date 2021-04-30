@@ -57,10 +57,6 @@ void clearBuf(char* b)
         b[i] = '\0';
 }
 
-// function for decryption
-char Cipher(char ch){
-    return ch;
-}
 
 // function to receive file
 int recvFile(char* buf, int s)
@@ -69,7 +65,6 @@ int recvFile(char* buf, int s)
     char ch;
     for (i = 0; i < s; i++) {
         ch = buf[i];
-        ch = Cipher(ch);
         if (ch == EOF)
             return 1;
 	else if (ch == '\0')
