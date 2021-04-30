@@ -1,173 +1,147 @@
-#include <stdio.h>
-#include <netdb.h>
+// server code for UDP socket programming
+#include <arpa/inet.h>
 #include <netinet/in.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#define SIZE 80
+#include <unistd.h>
+
+#define IP_PROTOCOL 0
 #define PORT 8080
-#define SA struct sockaddr
+#define SIZE 84
 
-//new variables for keeping track of everything
-int total_packets_rec = 0;
-int total_bytes_rec = 0;
-int total_dup_packs = 0;
-int total_dup_acks = 0;
-int packets_lost = 0;
-int rec_acks = 0;
-int lost_acks = 0;
-char filename[SIZE];
-
+#define sendrecvflag 0
+#define nofile "File Not Found!"
 
 //simulate packet loss by using a random float between 0 and 1.
 int sim_loss(double loss)
 {
-	double simulated = (double) (rand()%100) / 100;
-	if(simulated < loss){
-		printf("Packet was lost. \n");
-		return 0;
-	}
-	else{
-		printf("Packet successfully transferred. \n");
-		return 1;
-	}
+    double simulated = (double) (rand()%100) / 100;
+    if(simulated < loss){
+        printf("Packet was lost. \n");
+        return 0;
+    }
+    else{
+        printf("Packet successfully transferred. \n");
+        return 1;
+    }
 }
 
 //simulate ack loss by using a random float between 0 and 1.
 int sim_ack_loss(double loss)
 {
-	double simulated = (double) (rand()%100) / 100;
-	if(simulated < loss){
-			printf("Packet was lost. \n");
-			return 0;
-		}
-		else{
-			printf("Packet successfully transferred. \n");
-			return 1;
-		}
+    double simulated = (double) (rand()%100) / 100;
+    if(simulated < loss){
+            printf("Packet was lost. \n");
+            return 0;
+        }
+        else{
+            printf("Packet successfully transferred. \n");
+            return 1;
+        }
 }
 
-// Function designed for chat between client and server.
-void chatfunc(int sockfd)
+// function to clear buffer
+void clearBuf(char* b)
 {
-    char buff[SIZE];
-    int n, control;
-    control = 1;
-    while(control != 0) {
-        bzero(buff, SIZE);
-
-        // read the message from client and copy it in buffer
-        read(sockfd, buff, sizeof(buff));
-	strcpy(filename, buff);
-
-	//copy buffer contents then clear buffer
-        bzero(buff, SIZE);
-	if(filename != NULL){
-	  control = 0;
-	}
-    }
+    int i;
+    for (i = 0; i < SIZE; i++)
+        b[i] = '\0';
 }
 
-
-void send_file(FILE *fp, int sockfd){
-  int n, c, bytetotal, check = 0;
-  char data[SIZE] = {0};
-  n = 0; bytetotal = 0;
-
-
-  //Okay so here is what needs to happen. We have to rewrite this while loop
-  //at start we use recvfrom (https://linux.die.net/man/2/recvfrom)
-  //in order to get the incoming packet from client
-  //then we need to run the simulate packet loss function to see if we lose that packet
-  //then we check the sequence number to verify packet is in order or if we got a dup
-  //if we got a dup, then we go back to the top of the loop
-  //else we send the client that single line
-  // we currently still need to build a way to send acks (1 for good, 0 for bad)
-  //seq number can just flip back and forth from 0 and 1.
-
-
-  while((fgets(data, SIZE, fp)) != NULL) {
-    check = NULL; //reset chkval
-    check = write(sockfd, data, SIZE, 0);
-    if(check > 0){
-      n++; //only iterate n when packets are sent
-    } else if (check == 0){
-      printf("eot packet detected\n");
-    }
-     c = sizeof(data) / sizeof(data[0]);
-     printf("Packet %d transmitted with %d data bytes\n", n, c);
-     bytetotal += c;
-     }
-     printf("End of Transmission Packet with sequence number %d transmitted with %d data bytes\n", ++n, 0);
-     printf("Number of data bytes transmitted: %d\n", bytetotal);
-     bzero(data, SIZE);
-}
-
-
-int main(int argc, char *argv[]) //arg1 timeout value, arg2 packet loss rate, arg3 ack loss rate
+// function to encrypt
+char Cipher(char ch)
 {
-	srand(time(0));
-    int sockfd, connfd, len;
-    struct sockaddr_in servaddr, cli;
+    return ch;
+}
 
-    FILE *fp;
-
-    //get rates from the args.
-    double packet_loss_rate = atof(argv[1]);
-    double ack_loss_rate = atof(argv[2]);
-
-    // socket create and verification
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        printf("[!]Socket creation failed\n");
-        exit(0);
+// function sending file
+int sendFile(FILE* fp, char* buf, int s)
+{
+    int i, len;
+    if (fp == NULL) {
+        strcpy(buf, nofile);
+        len = strlen(nofile);
+        buf[len] = EOF;
+        for (i = 0; i < len; i++)
+            buf[i] = Cipher(buf[i]);
+        return 1;
     }
-    else
-        printf("[+]Socket successfully created\n");
-    bzero(&servaddr, sizeof(servaddr));
 
-    // assign IP, PORT
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(PORT);
-
-    // Binding newly created socket to given IP and verification
-    if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
-        printf("socket bind failed...\n");
-        exit(0);
+    char ch, ch2;
+    for (i = 0; i < s; i++) {
+        ch = fgetc(fp);
+        ch2 = Cipher(ch);
+        buf[i] = ch2;
+        if (ch == EOF)
+            return 1;
     }
-    else
-        printf("[+]Socket successfully binded..\n");
+    return 0;
+}
 
-    // Now server is ready to listen and verification
-    if ((listen(sockfd, 5)) != 0) {
-        printf("[!]Listen failed...\n");
-        exit(0);
+// driver code
+int main()
+{
+    int sockfd, nBytes;
+    struct sockaddr_in addr_con;
+    int addrlen = sizeof(addr_con);
+    addr_con.sin_family = AF_INET;
+    addr_con.sin_port = htons(PORT);
+    addr_con.sin_addr.s_addr = INADDR_ANY;
+    char net_buf[SIZE];
+    FILE* fp;
+
+    // socket()
+    sockfd = socket(AF_INET, SOCK_DGRAM, IP_PROTOCOL);
+
+    if (sockfd < 0)
+        printf("\nfile descriptor not received!!\n");
+    else
+        printf("\nfile descriptor %d received\n", sockfd);
+
+    // bind()
+    if (bind(sockfd, (struct sockaddr*)&addr_con, sizeof(addr_con)) == 0)
+        printf("\nSuccessfully binded!\n");
+    else
+        printf("\nBinding Failed!\n");
+
+    while (1) {
+        printf("\nWaiting for file name...\n");
+
+        // receive file name
+        clearBuf(net_buf);
+
+        nBytes = recvfrom(sockfd, net_buf,
+                          SIZE, sendrecvflag,
+                          (struct sockaddr*)&addr_con, &addrlen);
+
+        fp = fopen(net_buf, "r");
+        printf("\nFile Name Received: %s\n", net_buf);
+        if (fp == NULL)
+            printf("\nFile open failed!\n");
+        else
+            printf("\nFile Successfully opened!\n");
+
+        while (1) {
+
+            // process
+            if (sendFile(fp, net_buf, SIZE)) {
+                sendto(sockfd, net_buf, SIZE,
+                       sendrecvflag,
+                    (struct sockaddr*)&addr_con, addrlen);
+                break;
+            }
+
+            // send
+            sendto(sockfd, net_buf, SIZE,
+                   sendrecvflag,
+                (struct sockaddr*)&addr_con, addrlen);
+            clearBuf(net_buf);
+        }
+        if (fp != NULL)
+            fclose(fp);
     }
-    else
-        printf("[+]Server listening...\n");
-    len = sizeof(cli);
-
-    // Accept the data packet from client and verification
-    connfd = accept(sockfd, (SA*)&cli, &len);
-    if (connfd < 0) {
-        printf("[!]Server acccept failed\n");
-        exit(0);
-    }
-    else
-        printf("[+]Client has connected\n");
-
-    // Chat with client to get filename
-    chatfunc(connfd);
-    printf("File '%s' requested by client.\n", filename);
-
-    fp = fopen(filename, "r");//parse file
-    if(fp != NULL){ printf("Responding...\n"); } else { printf("Could not find %s", filename); }//give feedback
-    send_file(fp, connfd);//send file
-    printf("[+]File sent.\n");
-
-    // After chatting close the socket
-    printf("Closing connection.\n");
-    close(sockfd);
+    return 0;
 }
