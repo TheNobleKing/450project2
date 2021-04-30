@@ -15,6 +15,14 @@
 #define sendrecvflag 0
 #define nofile "File Not Found!"
 
+int datapacket_num;
+int bytes_transmitted;
+int packets_retransmitted;
+int suc_packets;
+int dropped_packets;
+int ack_count;
+int timeout_count;
+
 //simulate packet loss by using a random float between 0 and 1.
 int sim_loss(double loss)
 {
@@ -125,7 +133,6 @@ int main()
             printf("\nFile Successfully opened!\n");
 
         while (1) {
-
             // process
             if (sendFile(fp, net_buf, SIZE)) {
                 sendto(sockfd, net_buf, SIZE,

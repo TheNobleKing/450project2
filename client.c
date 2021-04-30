@@ -15,6 +15,12 @@
 
 #define sendrecvflag 0
 
+int pack_received;
+int dups_received;
+int bytes_received;
+int good_acks;
+int dropped_acks;
+
 //simulate packet loss by using a random float between 0 and 1.
 int sim_loss(double loss)
 {
