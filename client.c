@@ -109,19 +109,20 @@ int main(){
         while (1) {
             // receive
             bzero(net_buf, SIZE);
+            //if not ackloss goes here around recvfrom func
             nBytes = recvfrom(sockfd, net_buf, SIZE,
                               sendrecvflag, (struct sockaddr*)&addr_con,
                               &addrlen);
             // process
             if (recvFile(net_buf, SIZE)) {
-		fprintf(fp, net_buf);
-		fclose(fp);
+            	fprintf(fp, net_buf);
+            	fclose(fp);
                 break;
             } else {
 	        fprintf(fp, net_buf);
-	    }
         }
+     }
         printf("\n-------------------------------\n");
-    }
+  }
     return 0;
 }
