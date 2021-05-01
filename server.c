@@ -4,13 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #define IP_PROTOCOL 0
 #define PORT 8080
-#define SIZE 84
+#define SIZE 82
 
 #define sendrecvflag 0
 #define nofile "File Not Found!"
@@ -22,6 +23,12 @@ int suc_packets;
 int dropped_packets;
 int ack_count;
 int timeout_count;
+bool seq = 0;
+
+bool invoke_seq(){
+	seq = !seq;
+	return seq;
+}
 
 //simulate packet loss by using a random float between 0 and 1.
 int sim_loss(double loss)
@@ -62,23 +69,28 @@ void clearBuf(char* b)
 int sendFile(FILE* fp, char* buf, int s)
 {
     int i, len;
-    if (fp == NULL) {
+    if (fp == NULL) {//if no fp to copy from, nofile = "cannot find file"
+	printf("Server located null file.\n");
         strcpy(buf, nofile);
         len = strlen(nofile);
         buf[len] = EOF;
         return 1;
     }
-
+	//fill buffer with data
+    int16_t count = 0; //data count
     char ch, ch2;
-    for (i = 0; i < s; i++) {
+    for (i = 2; i < s; i++) {
         ch = fgetc(fp);
-        buf[i] = ch2;
+        buf[i] = ch;
+	count++;
         if (ch == EOF)
             return 1;
     }
+	//add header in first 2 indices
+	buf[0] = count;//each char is 1 byte
+	buf[1] = invoke_seq();
     return 0;
 }
-
 // driver code
 int main()
 {

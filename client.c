@@ -11,7 +11,7 @@
 #define IP_PROTOCOL 0
 #define IP_ADDRESS "127.0.0.1" // localhost
 #define PORT 8080
-#define SIZE 84
+#define SIZE 82
 
 #define sendrecvflag 0
 
@@ -57,13 +57,23 @@ void clearBuf(char* b)
         b[i] = '\0';
 }
 
+//function to strip header information
+char* strip_header(char* buffer){
+	for(int i=0;i<SIZE-2;i++){
+	    buffer[i] = buffer[i+2];}
+	buffer[SIZE-1] = '\0';
+	buffer[SIZE] = '\0';
+    return buffer;
+}
 
 // function to receive file
 int recvFile(char* buf, int s)
 {
     int i;
     char ch;
-    for (i = 0; i < s; i++) {
+	printf("\nPacket size: %d\t, seq: %d\n",buf[0], buf[1]);
+//	buf[0] = ""; buf[1] = "";
+    for (i = 2; i < s; i++) {
         ch = buf[i];
         if (ch == EOF)
             return 1;
@@ -114,11 +124,13 @@ int main(){
                               &addrlen);
             // process
             if (recvFile(net_buf, SIZE)) {
-		fprintf(fp, net_buf);
+		//net_buf = strip_header(net_buf);
+		fprintf(fp, strip_header(net_buf));
 		fclose(fp);
                 break;
             } else {
-	        fprintf(fp, net_buf);
+		//net_buf = strip_header(net_buf);
+	        fprintf(fp, strip_header(net_buf));
 	    }
         }
         printf("\n-------------------------------\n");
