@@ -18,7 +18,7 @@
 
 int datapacket_num = 0;
 int bytes_transmitted = 0;
-int packets_retransmitted = 0;
+int packets_transmitted = 0;
 int suc_packets = 0;
 int dropped_packets = 0;
 int ack_count = 0;
@@ -147,22 +147,32 @@ int main(int argc, char* argv[])
         else
             printf("\nFile Successfully opened!\n");
 
-        while (1) {
+        while (1) {  //change so we are waiting for the ack
             // process
             if (sendFile(fp, net_buf, SIZE)) {
-            	//if not simulateloss goes here, and wraps around the sendto
-                sendto(sockfd, net_buf, SIZE,
-                       sendrecvflag,
-                    (struct sockaddr*)&addr_con, addrlen);
-                break;
+            	if(!sim_loss(p_loss_rate)){
+            		sendto(sockfd, net_buf, SIZE,
+                		sendrecvflag,
+					   (struct sockaddr*)&addr_con, addrlen);
+            		packets_transmitted++;
+                	break;
+            	}else{
+            		printf("Packet Lost!\n");
+            		dropped_packets++;
+            	}
             }
 
             // send
-            //if not simulateloss goes here and wraps around the sendto
-            sendto(sockfd, net_buf, SIZE,
+            if(!sim_loss(p_loss_rate)){
+            	sendto(sockfd, net_buf, SIZE,
                    sendrecvflag,
-                (struct sockaddr*)&addr_con, addrlen);
-            clearBuf(net_buf);
+				   (struct sockaddr*)&addr_con, addrlen);
+            	clearBuf(net_buf);
+            	packets_transmitted++;
+        	}else{
+        		printf("Packet Lost!\n");
+        		dropped_packets++;
+        	}
         }
         if (fp != NULL)
             fclose(fp);
@@ -171,7 +181,7 @@ int main(int argc, char* argv[])
     printf("\n===TRANSMISSION REPORT===\n");
     printf("Datapacket total: %d\n", datapacket_num);
     printf("Byte total: %d\n", bytes_transmitted);
-    printf("Retransmitted packets total: %d\n", packets_retransmitted);
+    printf("Transmitted packets total: %d\n", packets_transmitted);
     printf("Total dropped packets: %d\n", dropped_packets);
     printf("Total successful packets: %d\n", suc_packets);
     printf("Number of received acks: %d\n", ack_count);
