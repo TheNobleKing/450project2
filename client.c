@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #define IP_PROTOCOL 0
 #define IP_ADDRESS "127.0.0.1" // localhost
@@ -20,6 +21,7 @@ int dups_received;
 int bytes_received;
 int good_acks;
 int dropped_acks;
+bool seq;
 
 //simulate packet loss by using a random float between 0 and 1.
 int sim_loss(double loss)
@@ -59,11 +61,34 @@ void clearBuf(char* b)
 
 //function to strip header information
 char* strip_header(char* buffer){
-	for(int i=0;i<SIZE-2;i++){
+	for(int i=0;i<SIZE-1;i++){
 	    buffer[i] = buffer[i+2];}
 	buffer[SIZE-1] = '\0';
 	buffer[SIZE] = '\0';
     return buffer;
+}
+
+char* add_header(char* buffer){ //only used once ;-; cannot be used in bytestream
+	int count = 0; //keeps track of number of bytes
+	for(int i=SIZE; i>1; i--){ //right to left
+	    if(buffer[i] != '\0'){count++;}
+	    buffer[i] = buffer[i-2]; //shift right twice
+	}
+	buffer[0] = count;
+	buffer[1] = seq;
+    return buffer;
+}
+
+void update_legacy(char* leg_buf, char* new_buf){
+	leg_buf[0] = new_buf[0];
+	leg_buf[1] = new_buf[1];
+}
+void check_buf(char* buf){
+	printf("CHECKING BUFFER:%c", '\n');
+	for(int i=0;i<SIZE;i++){
+	    printf("%c",buf[i]);
+	}
+	printf("\n CHECK \n");
 }
 
 // function to receive file
@@ -89,31 +114,42 @@ int recvFile(char* buf, int s)
 // driver code
 int main(){
     int sockfd, nBytes;
+    bool wait; //wait for ack
     struct sockaddr_in addr_con;
     int addrlen = sizeof(addr_con);
     addr_con.sin_family = AF_INET;
     addr_con.sin_port = htons(PORT);
     addr_con.sin_addr.s_addr = inet_addr(IP_ADDRESS);
-    char net_buf[SIZE];
+    char net_buf[SIZE]; char leg_buf[1]; char ack_buf[1];
     FILE* fp;
     // socket()
     sockfd = socket(AF_INET, SOCK_DGRAM,
                     IP_PROTOCOL);
-  
+
     if (sockfd < 0)
         printf("\nfile descriptor not received!!\n");
     else
         printf("\nfile descriptor %d received\n", sockfd);
         fp = fopen("out.txt","w"); //create out.txt
         printf("out.txt created.\n");
-
-    while (1) {
+	clearBuf(net_buf);
+	seq = 0; //init seq
         printf("\nPlease enter file name to receive:\n");
         scanf("%s", net_buf);
+	check_buf(net_buf);
+	add_header(net_buf);
+	check_buf(net_buf);
+
         sendto(sockfd, net_buf, SIZE,
                sendrecvflag, (struct sockaddr*)&addr_con,
                addrlen);
-
+	//update legacy buffer
+	wait = 1;
+	while(wait){
+	    //wait for ack
+	    //run timeout timer
+	    recvfrom(sockfd, ack_buf, 2, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
+	}
         printf("\n---------Data Received---------\n");
 
         while (1) {
@@ -134,6 +170,6 @@ int main(){
 	    }
         }
         printf("\n-------------------------------\n");
-    }
+//    }
     return 0;
 }

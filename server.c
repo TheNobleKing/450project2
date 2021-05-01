@@ -65,6 +65,23 @@ void clearBuf(char* b)
     for (i = 0; i < SIZE; i++)
         b[i] = '\0';
 }
+
+void check_buf(char* buf){//print buffer contents
+    printf("CHECKING BUFFER:%c", '\n');
+    for(int i=0;i<SIZE;i++){
+    printf("%c",buf[i]);
+    } printf("\n CHECK \n");
+ }
+
+//function to strip header information
+char* strip_header(char* buffer){
+    for(int i=0;i<SIZE-2;i++){
+    buffer[i] = buffer[i+2];}
+    buffer[SIZE-1] = '\0';
+    buffer[SIZE] = '\0';
+  return buffer;
+}
+
 // function sending file
 int sendFile(FILE* fp, char* buf, int s)
 {
@@ -95,6 +112,7 @@ int sendFile(FILE* fp, char* buf, int s)
 int main()
 {
     int sockfd, nBytes;
+    bool wait; //wait for ack
     struct sockaddr_in addr_con;
     int addrlen = sizeof(addr_con);
     addr_con.sin_family = AF_INET;
@@ -117,7 +135,7 @@ int main()
     else
         printf("\nBinding Failed!\n");
 
-    while (1) {
+   // while (1) {
         printf("\nWaiting for file name...\n");
 
         // receive file name
@@ -126,7 +144,7 @@ int main()
         nBytes = recvfrom(sockfd, net_buf,
                           SIZE, sendrecvflag,
                           (struct sockaddr*)&addr_con, &addrlen);
-
+	strip_header(net_buf);
         fp = fopen(net_buf, "r");
         printf("\nFile Name Received: %s\n", net_buf);
         if (fp == NULL)
@@ -153,6 +171,6 @@ int main()
         }
         if (fp != NULL)
             fclose(fp);
-    }
+    //}
     return 0;
 }
