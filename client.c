@@ -15,11 +15,15 @@
 
 #define sendrecvflag 0
 
-int pack_received;
-int dups_received;
-int bytes_received;
-int good_acks;
-int dropped_acks;
+int pack_received = 0;
+int dups_received = 0;
+int bytes_received = 0;
+int good_acks = 0;
+int dropped_acks = 0;
+
+double p_loss_rate;
+double ack_loss_rate;
+int timeout_val;
 
 //simulate packet loss by using a random float between 0 and 1.
 int sim_loss(double loss)
@@ -87,7 +91,16 @@ int recvFile(char* buf, int s)
 }
   
 // driver code
-int main(){
+int main(int argc, char* argv[]){
+	//loading in values that are passed in
+	if(argc != 3){
+		printf("Error, program requires arg for packet loss, ack loss, and timeout value to run.");
+		return -1;
+	}
+	double p_loss_rate = atof(argv[0]);
+	double ack_loss_rate = atof(argv[1]);
+	int timeout_val = atoi(argv[2]);
+
     int sockfd, nBytes;
     struct sockaddr_in addr_con;
     int addrlen = sizeof(addr_con);

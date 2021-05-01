@@ -16,14 +16,18 @@
 #define sendrecvflag 0
 #define nofile "File Not Found!"
 
-int datapacket_num;
-int bytes_transmitted;
-int packets_retransmitted;
-int suc_packets;
-int dropped_packets;
-int ack_count;
-int timeout_count;
+int datapacket_num = 0;
+int bytes_transmitted = 0;
+int packets_retransmitted = 0;
+int suc_packets = 0;
+int dropped_packets = 0;
+int ack_count = 0;
+int timeout_count = 0;
 bool seq = 0;
+
+double p_loss_rate;
+double ack_loss_rate;
+int timeout_val;
 
 bool invoke_seq(){
 	seq = !seq;
@@ -92,7 +96,7 @@ int sendFile(FILE* fp, char* buf, int s)
     return 0;
 }
 // driver code
-int main()
+int main(int argc, char* argv[])
 {
     int sockfd, nBytes;
     struct sockaddr_in addr_con;
@@ -102,6 +106,15 @@ int main()
     addr_con.sin_addr.s_addr = INADDR_ANY;
     char net_buf[SIZE];
     FILE* fp;
+    //loading in values that are passed in
+	if(argc != 3){
+		printf("Error, program requires arg for packet loss, ack loss, and timeout value to run.");
+		return -1;
+	}
+	double p_loss_rate = atof(argv[0]);
+	double ack_loss_rate = atof(argv[1]);
+	int timeout_val = atoi(argv[2]);
+
 
     // socket()
     sockfd = socket(AF_INET, SOCK_DGRAM, IP_PROTOCOL);
@@ -154,5 +167,14 @@ int main()
         if (fp != NULL)
             fclose(fp);
     }
+    //printing required values
+    printf("\n===TRANSMISSION REPORT===\n");
+    printf("Datapacket total: %d\n", datapacket_num);
+    printf("Byte total: %d\n", bytes_transmitted);
+    printf("Retransmitted packets total: %d\n", packets_retransmitted);
+    printf("Total dropped packets: %d\n", dropped_packets);
+    printf("Total successful packets: %d\n", suc_packets);
+    printf("Number of received acks: %d\n", ack_count);
+    printf("Number of timeouts: %d\n", timeout_count);
     return 0;
 }
