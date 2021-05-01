@@ -148,7 +148,9 @@ int main(){
 	while(wait){
 	    //wait for ack
 	    //run timeout timer
-	    recvfrom(sockfd, ack_buf, 2, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
+	   if(recvfrom(sockfd, ack_buf, 2, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen) > 0){
+		wait = 0;
+		}
 	}
         printf("\n---------Data Received---------\n");
 

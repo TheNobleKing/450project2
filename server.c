@@ -118,7 +118,7 @@ int main()
     addr_con.sin_family = AF_INET;
     addr_con.sin_port = htons(PORT);
     addr_con.sin_addr.s_addr = INADDR_ANY;
-    char net_buf[SIZE];
+    char net_buf[SIZE]; char ack_buf[1];
     FILE* fp;
 
     // socket()
@@ -144,14 +144,17 @@ int main()
         nBytes = recvfrom(sockfd, net_buf,
                           SIZE, sendrecvflag,
                           (struct sockaddr*)&addr_con, &addrlen);
+	//need to ack recvfrom!
+	ack_buf[0] = net_buf[0]; ack_buf[1] = net_buf[1];//copy datagram header
+	sendto(sockfd, ack_buf, 2, sendrecvflag, (struct sockaddr*)&addr_con, addrlen);
+
 	strip_header(net_buf);
         fp = fopen(net_buf, "r");
         printf("\nFile Name Received: %s\n", net_buf);
-        if (fp == NULL)
+	if (fp == NULL)
             printf("\nFile open failed!\n");
         else
             printf("\nFile Successfully opened!\n");
-
         while (1) {
             // process
             if (sendFile(fp, net_buf, SIZE)) {
