@@ -179,12 +179,10 @@ int main(int argc, char* argv[])
             // send
             if(!sim_loss(p_loss_rate)){
             	sendto(sockfd, net_buf, SIZE,sendrecvflag,(struct sockaddr*)&addr_con, addrlen);
-            	ack_buf = 1;//net_buf[1];
 		wait = 1; clearBuf(net_buf);
 		while(wait){ //wait for ack
-		    recvfrom(sockfd, net_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
-		    printf("INCOMING SEQ: %d\n", net_buf);
-		    if(net_buf[0] == ack_buf){ wait = 0; }
+		    recvfrom(sockfd, ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
+		    if(ack_buf == 1){ wait = 0; printf("\n DATAGRAM ACK RECIEVED\n");}
 		}
 		clearBuf(net_buf);
             	packets_transmitted++;

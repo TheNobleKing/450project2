@@ -91,7 +91,7 @@ int recvFile(char* buf, int s)
 	    //printf("\nLast char is %c\n", buf[s]);
     return 0;
 }
-  
+
 // driver code
 int main(int argc, char* argv[]){
 	//loading in values that are passed in
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]){
     // socket()
     sockfd = socket(AF_INET, SOCK_DGRAM,
                     IP_PROTOCOL);
-  
+
     if (sockfd < 0)
         printf("\nfile descriptor not received!!\n");
     else
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
 	wait = 1;
 	while(wait){
 	    recvfrom(sockfd, &ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
-	    if(ack_buf < 1){
+	    if(ack_buf == 0){
 	        wait = 0;
 	    }
 	}
@@ -159,6 +159,7 @@ int main(int argc, char* argv[]){
 		ack_buf = 1;//net_buf[1]; //pull seq id
 	        fprintf(fp, strip_header(net_buf)); //parse datagram
 		sendto(sockfd, ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, addrlen);//ack with seq number
+		printf("\nDATAGRAM ACK SENT\n");
 	    }
      }
         printf("\n-------------------------------\n");
