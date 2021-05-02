@@ -21,11 +21,25 @@ int dups_received = 0;
 int bytes_received = 0;
 int good_acks = 0;
 int dropped_acks = 0;
-bool seq;
+bool seq = 0;
 
 double p_loss_rate;
 double ack_loss_rate;
 int timeout_val;
+
+bool invoke_seq(){
+	seq = !seq;
+return seq;
+}
+
+short buffer_ack(){
+	invoke_seq();
+	if(seq == true){
+	    return 1;
+	} else {
+	    return 0;
+	}
+}
 
 //simulate packet loss by using a random float between 0 and 1.
 int sim_loss(double loss)
@@ -134,11 +148,11 @@ int main(int argc, char* argv[]){
 	wait = 1;
 	while(wait){
 	    recvfrom(sockfd, &ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
-	    if(ack_buf == 0){
-	        wait = 0;
+	    if(ack_buf == seq){//we expect the filename ACK to be zero
+	        wait = 0; //ack_buf = buffer_ack();
 	    }
 	}
-	printf("ACK successful");
+	printf("\nfilename ACK successful, ack = %d\n", ack_buf);
         printf("\n---------Data Received---------\n");
 
         while (1) {
@@ -155,12 +169,13 @@ int main(int argc, char* argv[]){
             	fclose(fp);
                 break;
            } else {
-		//net_buf = strip_header(net_buf);
-		ack_buf = 1;//net_buf[1]; //pull seq id
+		//net_buf = strip_header(net_buf)
+		ack_buf = buffer_ack();//pull seq id
+		printf("\nAck buf = %d\n", ack_buf);
 	        fprintf(fp, strip_header(net_buf)); //parse datagram
-		sendto(sockfd, ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, addrlen);//ack with seq number
-		printf("\nDATAGRAM ACK SENT\n");
-	    }
+		sendto(sockfd, &ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, addrlen);//ack with seq number
+		printf("DATAGRAM ACK SENT\n");
+	    }//loopback to recvfrom
      }
         printf("\n-------------------------------\n");
   }

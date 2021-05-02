@@ -34,13 +34,14 @@ bool invoke_seq(){
 	return seq;
 }
 
-void buffer_ack(int* b){ //since invoke flips seq, ack will be last seq so ack = !seq
-	if(seq == false){
-	    b = 1;
+short buffer_ack(){ //seq flips every time starting at 1, so first return (for filename ack) is 0
+	invoke_seq();
+	if(seq == true){
+	    return 1;
 	} else {
-	    b = 0;
+	    return 0;
 	}
-printf("seq: %d\t ack: %d\n", seq, b);
+//printf("seq: %d\n",seq);
 }
 
 //simulate packet loss by using a random float between 0 and 1.
@@ -114,7 +115,7 @@ int main(int argc, char* argv[])
     addr_con.sin_family = AF_INET;
     addr_con.sin_port = htons(PORT);
     addr_con.sin_addr.s_addr = INADDR_ANY;
-    char net_buf[SIZE]; short* ack_buf;
+    char net_buf[SIZE]; short ack_buf;
     FILE* fp;
     //loading in values that are passed in
 	if(argc != 4){
@@ -149,11 +150,10 @@ int main(int argc, char* argv[])
                           SIZE, sendrecvflag,
                           (struct sockaddr*)&addr_con, &addrlen);
 
-	buffer_ack(ack_buf);
-	printf("%d ------------------\n", ack_buf);
-
-	if(nBytes > 0){ //if we recieve name, we need to ack!
-	    sendto(sockfd, &ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, addrlen);
+	if(nBytes > 0){ //if we recieve name, we need to ack with 0!
+	    	ack_buf = buffer_ack();
+		printf("filename acK: %d \n", ack_buf);
+		sendto(sockfd, &ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, addrlen);
 	}
 
         fp = fopen(net_buf, "r");
@@ -167,6 +167,7 @@ int main(int argc, char* argv[])
             // process
             if (sendFile(fp, net_buf, SIZE)) {
             	if(!sim_loss(p_loss_rate)){
+			printf("EOF reached\n");
             		sendto(sockfd, net_buf, SIZE, sendrecvflag, (struct sockaddr*)&addr_con, addrlen);
             		packets_transmitted++;
                 	break;
@@ -178,11 +179,20 @@ int main(int argc, char* argv[])
 
             // send
             if(!sim_loss(p_loss_rate)){
+		printf("Enter send conditional\n");
             	sendto(sockfd, net_buf, SIZE,sendrecvflag,(struct sockaddr*)&addr_con, addrlen);
-		wait = 1; clearBuf(net_buf);
+		printf("datagram transfer complete\n");
+		printf("waiting for ack w/ seq: %d", seq);
+		wait = 1;
+		//clearBuf(net_buf);
+		//printf("Waiting for datagram ack w/ seq: %d", seq);
 		while(wait){ //wait for ack
-		    recvfrom(sockfd, ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
-		    if(ack_buf == 1){ wait = 0; printf("\n DATAGRAM ACK RECIEVED\n");}
+		    printf("\nwaitloop\n");
+		    recvfrom(sockfd, &ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
+		    if(ack_buf == (char)seq){ 
+			wait = 0; 
+			printf("\n DATAGRAM ACK RECIEVED\n");
+		    }
 		}
 		clearBuf(net_buf);
             	packets_transmitted++;
