@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 #define IP_PROTOCOL 0
@@ -20,6 +21,7 @@ int dups_received = 0;
 int bytes_received = 0;
 int good_acks = 0;
 int dropped_acks = 0;
+bool seq;
 
 double p_loss_rate;
 double ack_loss_rate;
@@ -102,12 +104,13 @@ int main(int argc, char* argv[]){
 	int timeout_val = atoi(argv[2]);
 
     int sockfd, nBytes;
+    bool wait; //when waiting for ack
     struct sockaddr_in addr_con;
     int addrlen = sizeof(addr_con);
     addr_con.sin_family = AF_INET;
     addr_con.sin_port = htons(PORT);
     addr_con.sin_addr.s_addr = inet_addr(IP_ADDRESS);
-    char net_buf[SIZE];
+    char net_buf[SIZE]; short ack_buf;
     FILE* fp;
     // socket()
     sockfd = socket(AF_INET, SOCK_DGRAM,
@@ -126,7 +129,16 @@ int main(int argc, char* argv[]){
         sendto(sockfd, net_buf, SIZE,
                sendrecvflag, (struct sockaddr*)&addr_con,
                addrlen);
-
+//need to wait for ack!
+	printf("Sending, stand by for acknowledgement...\n");
+	wait = 1;
+	while(wait){
+	    recvfrom(sockfd, &ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, &addrlen);
+	    if(ack_buf < 1){
+	        wait = 0;
+	    }
+	}
+	printf("ACK successful");
         printf("\n---------Data Received---------\n");
 
         while (1) {
@@ -144,7 +156,9 @@ int main(int argc, char* argv[]){
                 break;
            } else {
 		//net_buf = strip_header(net_buf);
-	        fprintf(fp, strip_header(net_buf));
+		ack_buf = 1;//net_buf[1]; //pull seq id
+	        fprintf(fp, strip_header(net_buf)); //parse datagram
+		sendto(sockfd, ack_buf, 1, sendrecvflag, (struct sockaddr*)&addr_con, addrlen);//ack with seq number
 	    }
      }
         printf("\n-------------------------------\n");
