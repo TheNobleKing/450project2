@@ -40,11 +40,11 @@ int sim_loss(double loss)
     double simulated = (double) (rand()%100) / 100;
     if(simulated < loss){
         printf("Packet was lost. \n");
-        return 0;
+        return 1;
     }
     else{
         printf("Packet successfully transferred. \n");
-        return 1;
+        return 0;
     }
 }
 
@@ -54,11 +54,11 @@ int sim_ack_loss(double loss)
     double simulated = (double) (rand()%100) / 100;
     if(simulated < loss){
             printf("Packet was lost. \n");
-            return 0;
+            return 1;
         }
         else{
             printf("Packet successfully transferred. \n");
-            return 1;
+            return 0;
         }
 }
 
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
     char net_buf[SIZE];
     FILE* fp;
     //loading in values that are passed in
-	if(argc != 3){
+	if(argc != 4){
 		printf("Error, program requires arg for packet loss, ack loss, and timeout value to run.");
 		return -1;
 	}
@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
             fclose(fp);
     }
     //printing required values
-    printf("\n===TRANSMISSION REPORT===\n");
+    printf("\n===SERVER TRANSMISSION REPORT===\n");
     printf("Datapacket total: %d\n", datapacket_num);
     printf("Byte total: %d\n", bytes_transmitted);
     printf("Transmitted packets total: %d\n", packets_transmitted);

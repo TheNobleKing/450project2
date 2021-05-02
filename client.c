@@ -15,7 +15,7 @@
 
 #define sendrecvflag 0
 
-int pack_received = 0;
+int packs_received = 0;
 int dups_received = 0;
 int bytes_received = 0;
 int good_acks = 0;
@@ -31,11 +31,11 @@ int sim_loss(double loss)
     double simulated = (double) (rand()%100) / 100;
     if(simulated < loss){
         printf("Packet was lost. \n");
-        return 0;
+        return 1;
     }
     else{
         printf("Packet successfully transferred. \n");
-        return 1;
+        return 0;
     }
 }
 
@@ -45,11 +45,11 @@ int sim_ack_loss(double loss)
     double simulated = (double) (rand()%100) / 100;
     if(simulated < loss){
             printf("Packet was lost. \n");
-            return 0;
+            return 1;
         }
         else{
             printf("Packet successfully transferred. \n");
-            return 1;
+            return 0;
         }
 }
 
@@ -93,7 +93,7 @@ int recvFile(char* buf, int s)
 // driver code
 int main(int argc, char* argv[]){
 	//loading in values that are passed in
-	if(argc != 3){
+	if(argc != 4){
 		printf("Error, program requires arg for packet loss, ack loss, and timeout value to run.");
 		return -1;
 	}
@@ -149,5 +149,11 @@ int main(int argc, char* argv[]){
      }
         printf("\n-------------------------------\n");
   }
+    printf("\n===SERVER TRANSMISSION REPORT===\n");
+    printf("Packets Received: %d\n", packs_received);
+    printf("Duplicate Packets Received: %d\n", dups_received);
+    int total_pack = packs_received + dups_received;
+    printf("Total Packets: %d\n", total_pack);
+    printf("");
     return 0;
 }
