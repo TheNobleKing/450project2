@@ -7,7 +7,7 @@ clean:
 	rm out.txt
 
 client: client.o
-	./client.o
+	./client.o 0 .5 4
 
 server: server.o
-	./server.o
+	./server.o 0 .5 4
